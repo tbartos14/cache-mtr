@@ -1,2 +1,4 @@
 venv/
 lt/
+.idea/
+__pycache__/
