@@ -1,8 +1,11 @@
 import numpy as np
+from typing import List
 from choose import numProcessManager
 from distributions import userCacheManager
+import ray
+ray.init(ignore_reinit_error=True)
 
-
+@ray.remote
 class EvaluationDriver(object):
     def __init__(
         self,
@@ -57,6 +60,9 @@ class EvaluationDriver(object):
 
     def index_files(self) -> np.ndarray:
         return np.arange(self.num_of_files)
+
+    def _actor_return_trials(self) -> List:
+        return self.trials
 
 
 if __name__ == "__main__":
