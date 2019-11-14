@@ -17,6 +17,8 @@ from config import (
     DEFAULT_ALPHA_END,
     DEFAULT_ALPHA_START,
     DEFAULT_NUMBER_OF_ALPHA,
+    DEFAULT_ZIPF,
+    DEFAULT_SIMULATIONS_PER_TICK,
 )
 
 if is_pyqt5():
@@ -38,11 +40,12 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         self.running: bool = False
         self.beta: float = 0
-        self.range_alpha: np.ndarray = np.array([])
+        self.range_alpha: List = []
         self.hide_alpha_zero: bool = False
         self.need_to_remake: bool = True
         self.ready_to_go = False
         self.logarithmic = False
+        self.simulations_per_tick: int = 0
 
         super().__init__()
         self._main = QtWidgets.QWidget()
@@ -95,14 +98,14 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         miniui.addLayout(self.toggle_buttons, 1, 0)
 
         self.box_hide_alpha_zero = QtWidgets.QCheckBox(
-            "Hide Alpha=0 Distribution", self
+            "Hide \\alpha=0/Show \\alpha=1", self
         )
         self.box_hide_alpha_zero.stateChanged.connect(self.clicked_hide_a)
         self.toggle_buttons.addWidget(self.box_hide_alpha_zero, 0, 0)
 
         # needs_restart_label = QtWidgets.QLabel("Requires Restart")
         # self.toggle_buttons.addWidget(needs_restart_label, 1, 0)
-        self.is_logarithmic = QtWidgets.QCheckBox("Logarithmic alpha")
+        self.is_logarithmic = QtWidgets.QCheckBox("Logarithmic \\alpha")
         self.is_logarithmic.stateChanged.connect(self.clicked_logarithmic)
         self.toggle_buttons.addWidget(self.is_logarithmic, 2, 0)
 
@@ -149,6 +152,18 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.num_of_alpha_entry.setFixedWidth(80)
         entry_text.addWidget(self.num_of_alpha_entry, 5, 1)
 
+        zipf_label = QtWidgets.QLabel("Zipf constant a")
+        entry_text.addWidget(zipf_label, 6, 1)
+        self.zipf_entry = QtWidgets.QLineEdit(self)
+        self.zipf_entry.setFixedWidth(80)
+        entry_text.addWidget(self.zipf_entry, 7, 1)
+
+        simulation_ptick_label = QtWidgets.QLabel("Simulations per tick")
+        entry_text.addWidget(simulation_ptick_label, 8, 0)
+        self.simulation_ptick_entry = QtWidgets.QLineEdit(self)
+        self.simulation_ptick_entry.setFixedWidth(80)
+        entry_text.addWidget(self.simulation_ptick_entry, 9, 0)
+
         self._static_ax = self.static_canvas.figure.subplots()
 
         self._dynamic_ax = self.dynamic_canvas.figure.subplots()
@@ -164,6 +179,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.alpha_start_entry.setText(str(DEFAULT_ALPHA_START))
         self.alpha_end_entry.setText(str(DEFAULT_ALPHA_END))
         self.num_of_alpha_entry.setText(str(DEFAULT_NUMBER_OF_ALPHA))
+        self.zipf_entry.setText(str(DEFAULT_ZIPF))
+        self.simulation_ptick_entry.setText(str(DEFAULT_SIMULATIONS_PER_TICK))
 
     def initialize_simulation(self):
 
@@ -178,6 +195,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             "alpha_start": [self.alpha_start_entry, float],
             "alpha_end": [self.alpha_end_entry, float],
             "num_alpha": [self.num_of_alpha_entry, int],
+            "file_zipf_scalar": [self.zipf_entry, float],
+            "sim_per_tick": [self.simulation_ptick_entry, int]
         }
 
         result_dict: Dict[str, Union[int, float]] = dict()
@@ -200,6 +219,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         else:
             self.range_alpha = np.linspace(result_dict["alpha_start"], result_dict["alpha_end"], result_dict["num_alpha"])
 
+        self.simulations_per_tick = result_dict["sim_per_tick"]
+
+        self.range_alpha = list(self.range_alpha)
+
         # setup evaluation driver
         self.evaluators = []
         for alpha in self.range_alpha:
@@ -209,6 +232,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 num_of_users=result_dict["user_num"],
                 num_of_requests=result_dict["request_size"],
                 alpha=alpha,
+                zipf_constant=result_dict["file_zipf_scalar"]
             )
             evaluator.setup()
             self.evaluators.append(evaluator)
@@ -236,7 +260,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
             t1 = time.time()
             self._dynamic_ax.clear()
-            [evaluator.drive_multiple(1) for evaluator in self.evaluators]
+            [evaluator.drive_multiple(self.simulations_per_tick) for evaluator in self.evaluators]
             t2 = time.time()
 
             print(f"Differential: {t2-t1}")
@@ -308,13 +332,21 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         if self.hide_alpha_zero:
             if 0 in self.range_alpha:
                 for index in range(len(self.range_alpha)):
-                    if (
-                        self.range_alpha.index(0) != index
-                        and self.range_alpha.index(1) != index
-                    ):
-                        self._file_dist.plot(
-                            self.x_axis, self.evaluators[index].cm.cache_p_choice
-                        )
+                    if 1 in self.range_alpha:
+                        if (
+                            self.range_alpha.index(0) != index
+                            and self.range_alpha.index(1) != index
+                        ):
+                            self._file_dist.plot(
+                                self.x_axis, self.evaluators[index].cm.cache_p_choice
+                            )
+                    else:
+                        if (
+                            self.range_alpha.index(0) != index
+                        ):
+                            self._file_dist.plot(
+                                self.x_axis, self.evaluators[index].cm.cache_p_choice
+                            )
         else:
             if 1 in self.range_alpha:
                 for index in range(len(self.range_alpha)):

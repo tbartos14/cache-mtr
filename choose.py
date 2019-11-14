@@ -4,14 +4,15 @@ from typing import Optional
 
 
 class numProcessManager(object):
-    def __init__(self):
+    def __init__(self, file_zipf_scalar: float):
         self.file_distribution: Optional[np.ndarray] = None
         self.chosen_result: Optional[np.ndarray] = None
+        self.file_zipf_scalar: float = file_zipf_scalar
 
     def create_dist(self, num_files: int, automatic: bool = False):
         if automatic:
             # generate standard zipf
-            zipf: np.ndarray = np.random.zipf(1.0005, num_files)
+            zipf: np.ndarray = np.random.zipf(self.file_zipf_scalar, num_files)
 
             # scale so that sum(p) = 1
             self.file_distribution = zipf.astype(np.float64)
@@ -32,7 +33,7 @@ class numProcessManager(object):
 
         for i in range(users):
             result_array[i:] = np.random.choice(
-                length, choices, p=self.file_distribution, replace=False
+                length, choices, p=self.file_distribution, replace=True
             )
 
         self.chosen_result = result_array

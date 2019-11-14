@@ -12,6 +12,7 @@ class EvaluationDriver(object):
         num_of_requests: int,
         alpha: float,
         beta: float = 0,
+        zipf_constant: float = 1.0005,
     ):
         self.num_of_files: int = num_of_files
         self.cache_size: int = cache_size
@@ -22,7 +23,7 @@ class EvaluationDriver(object):
 
         self.trials = []
 
-        self.pm = numProcessManager()
+        self.pm = numProcessManager(file_zipf_scalar=zipf_constant)
         self.cm = userCacheManager()
 
     def drive_multiple(self, trials: int) -> None:
