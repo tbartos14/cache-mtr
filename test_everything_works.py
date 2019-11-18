@@ -1,4 +1,3 @@
 import pytest
 
-
-def test_choose_main():
+# One day, I will make sure everything works...

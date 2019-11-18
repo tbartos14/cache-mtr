@@ -1,4 +1,5 @@
 import numpy as np
+from typing import List
 from choose import numProcessManager
 from distributions import userCacheManager
 
@@ -57,6 +58,9 @@ class EvaluationDriver(object):
 
     def index_files(self) -> np.ndarray:
         return np.arange(self.num_of_files)
+
+    def _actor_return_trials(self) -> List:
+        return self.trials
 
 
 if __name__ == "__main__":

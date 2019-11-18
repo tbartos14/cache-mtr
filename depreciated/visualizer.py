@@ -196,7 +196,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             "alpha_end": [self.alpha_end_entry, float],
             "num_alpha": [self.num_of_alpha_entry, int],
             "file_zipf_scalar": [self.zipf_entry, float],
-            "sim_per_tick": [self.simulation_ptick_entry, int]
+            "sim_per_tick": [self.simulation_ptick_entry, int],
         }
 
         result_dict: Dict[str, Union[int, float]] = dict()
@@ -214,10 +214,18 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             return
 
         if self.logarithmic:
-            self.range_alpha = np.linspace(log10(result_dict["alpha_start"]), log10(result_dict["alpha_end"]), result_dict["num_alpha"])
+            self.range_alpha = np.linspace(
+                log10(result_dict["alpha_start"]),
+                log10(result_dict["alpha_end"]),
+                result_dict["num_alpha"],
+            )
             self.range_alpha = np.power(10, self.range_alpha)
         else:
-            self.range_alpha = np.linspace(result_dict["alpha_start"], result_dict["alpha_end"], result_dict["num_alpha"])
+            self.range_alpha = np.linspace(
+                result_dict["alpha_start"],
+                result_dict["alpha_end"],
+                result_dict["num_alpha"],
+            )
 
         self.simulations_per_tick = result_dict["sim_per_tick"]
 
@@ -232,7 +240,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 num_of_users=result_dict["user_num"],
                 num_of_requests=result_dict["request_size"],
                 alpha=alpha,
-                zipf_constant=result_dict["file_zipf_scalar"]
+                zipf_constant=result_dict["file_zipf_scalar"],
             )
             evaluator.setup()
             self.evaluators.append(evaluator)
@@ -260,7 +268,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
             t1 = time.time()
             self._dynamic_ax.clear()
-            [evaluator.drive_multiple(self.simulations_per_tick) for evaluator in self.evaluators]
+            [
+                evaluator.drive_multiple(self.simulations_per_tick)
+                for evaluator in self.evaluators
+            ]
             t2 = time.time()
 
             print(f"Differential: {t2-t1}")
@@ -269,8 +280,14 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 sum(evaluator.trials) / len(evaluator.trials)
                 for evaluator in self.evaluators
             ]
-            maxs = [max(evaluator.trials)/evaluator.num_of_users for evaluator in self.evaluators]
-            mins = [min(evaluator.trials)/evaluator.num_of_users for evaluator in self.evaluators]
+            maxs = [
+                max(evaluator.trials) / evaluator.num_of_users
+                for evaluator in self.evaluators
+            ]
+            mins = [
+                min(evaluator.trials) / evaluator.num_of_users
+                for evaluator in self.evaluators
+            ]
             adjusted_average = [
                 sum(evaluator.trials) / len(evaluator.trials) / evaluator.num_of_users
                 for evaluator in self.evaluators
@@ -341,9 +358,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                                 self.x_axis, self.evaluators[index].cm.cache_p_choice
                             )
                     else:
-                        if (
-                            self.range_alpha.index(0) != index
-                        ):
+                        if self.range_alpha.index(0) != index:
                             self._file_dist.plot(
                                 self.x_axis, self.evaluators[index].cm.cache_p_choice
                             )
