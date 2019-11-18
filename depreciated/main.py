@@ -2,10 +2,8 @@ import numpy as np
 from typing import List
 from choose import numProcessManager
 from distributions import userCacheManager
-import ray
-ray.init(ignore_reinit_error=True)
 
-@ray.remote
+
 class EvaluationDriver(object):
     def __init__(
         self,
