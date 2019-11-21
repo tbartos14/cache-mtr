@@ -71,7 +71,9 @@ def _unique_vars_in_formula(formula: str) -> Set[str]:
 
     while len(parse_latex_identified) > 0:
         parse_latex_identified = [
-            piecewise.args if (not isinstance(piecewise, Symbol) and not isinstance(piecewise, tuple)) else piecewise
+            piecewise.args
+            if (not isinstance(piecewise, Symbol) and not isinstance(piecewise, tuple))
+            else piecewise
             for piecewise in parse_latex_identified
         ]
         # flatten
@@ -98,6 +100,7 @@ def _unique_vars_in_formula(formula: str) -> Set[str]:
 
     return stringified
 
+
 def evaluate_string_to_valid_formula_str(formula: str) -> str:
     """
     Simply cleaning up the mess
@@ -115,10 +118,16 @@ def evaluate_string_to_valid_formula_str(formula: str) -> str:
     formula = formula.replace("{\\sum_{n=1}^{m}{p_r(n)", "{v").replace("p_r(m)", "r")
     return formula
 
+
 if __name__ == "__main__":
-    example = "{p_r(m)^{1\\over\\alpha}}\\over{\\sum_{n=1}^{m}{p_r(n)^{1\\over\\alpha}}}}"
+    example = (
+        "{p_r(m)^{1\\over\\alpha}}\\over{\\sum_{n=1}^{m}{p_r(n)^{1\\over\\alpha}}}}"
+    )
     # example = "p_r(m)^{1\\over\\alpha}"
     real_formula = evaluate_string_to_valid_formula_str(example)
     print(real_formula, parse_to_sympy(real_formula).args[1].args)
-    print(real_formula, parse_to_sympy(real_formula).evalf(subs={"r": 1, "alpha": 2, "v": 2}))
+    print(
+        real_formula,
+        parse_to_sympy(real_formula).evalf(subs={"r": 1, "alpha": 2, "v": 2}),
+    )
     print(_unique_vars_in_formula(real_formula))

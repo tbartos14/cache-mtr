@@ -3,9 +3,6 @@ Generating distribution curves for given sympy distribution formulas
 """
 
 import numpy as np
-import subprocess
-import os
-import math
 import sympy
 from typing import Any, List
 from config import DEFAULT_ZIPF, USE_NUMPY_ZIPF, STRICT_EVALUATION
@@ -21,7 +18,8 @@ def generate_distribution_curve(
     :param formula: sympa.core formula to be evaluated
 
     :param args: additional arguments, currently unused
-    :param kwargs: passing additional arguments, including sympy formulas (use of m as a sympy symbol is illegal)
+    :param kwargs: passing additional arguments, including sympy formulas
+        (use of m, v, and r as a sympy symbol is illegal)
         'alpha' - kwarg specific to automatic dist
         others - supply sympy symbolic expression
     :return: np.ndarray containing distribution
@@ -43,7 +41,7 @@ def generate_distribution_curve(
                         1, np.arange(length)
                     ) ** alpha
 
-                    # need to remove infinite values, indicator of 0 index, evaluate as 1
+                    # need to remove infinite values, indicator of 0 index, use 1
                     numerator[numerator == np.inf] = 1
                     # this case won't happen for any real distribution, but who knows
                     # what i'll try later
@@ -82,7 +80,8 @@ def modify_distribution_curve(
     existing_dist: np.ndarray, formula: Any = None, *args, **kwargs
 ) -> np.ndarray:
     """
-    Modifying distribution curves, namely for creating a caching distribution for the user
+    Modifying distribution curves, namely for creating a caching distribution
+     for the user
     :param existing_dist: np.ndarray distribution container
     :param formula: sympy expression mapped for each item
     :param args: currently unused
@@ -91,7 +90,9 @@ def modify_distribution_curve(
     """
     modified_distribution: List[Any] = []
 
-    assert not any([var in ["m", "v", "r"] for var in kwargs.keys()]), "Sympy Symbols 'm', 'v', and 'r' are internal use only."
+    assert not any(
+        [var in ["m", "v", "r"] for var in kwargs.keys()]
+    ), "Sympy Symbols 'm', 'v', and 'r' are internal use only."
     cumulative_dist = np.cumsum(existing_dist)
     index = np.arange(len(existing_dist))
 

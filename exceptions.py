@@ -3,5 +3,13 @@ All-purpose for breaking-things-on-purpose
 """
 
 
-class InvalidParameters(BaseException):
+class InvalidParametersException(BaseException):
+    pass
+
+
+class NumericalError(BaseException):
+    pass
+
+
+class EvaluationError(BaseException):
     pass
