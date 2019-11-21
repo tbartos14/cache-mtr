@@ -86,21 +86,30 @@ def modify_distribution_curve(
     :param existing_dist: np.ndarray distribution container
     :param formula: sympy expression mapped for each item
     :param args: currently unused
-    :param kwargs: sympy expression variables (use of variable m is illegal)
+    :param kwargs: sympy expression variables (use of variables m, v, and r is illegal)
     :return: np.ndarray containing the final distribution
     """
     modified_distribution: List[Any] = []
-    for m in np.arange(len(existing_dist)):
-        symbolic_m = sympy.symbols("m")
-        kwargs[symbolic_m] = m
-        try:
-            modified_distribution.append(formula.evalf(subs=kwargs))
-        except Exception as e:
-            if STRICT_EVALUATION:
-                raise e
-            else:
-                modified_distribution.append(np.NaN)
-    modified_distribution: np.ndarray = np.array(modified_distribution)
+
+    assert not any([var in ["m", "v", "r"] for var in kwargs.keys()]), "Sympy Symbols 'm', 'v', and 'r' are internal use only."
+    cumulative_dist = np.cumsum(existing_dist)
+    index = np.arange(len(existing_dist))
+
+    lambda_arg_keys = ["m", "v", "r"]
+    lambda_arg_values = [index, cumulative_dist, existing_dist]
+    for key, value in kwargs.items():
+        lambda_arg_keys.append(key)
+        lambda_arg_values.append(value)
+
+    lambda_arg_keys = [sympy.Symbol(var) for var in lambda_arg_keys]
+
+    func = sympy.lambdify(lambda_arg_keys, formula, "numpy")
+    modified_distribution: np.ndarray = np.array(func(*lambda_arg_values))
+
+    # if the total probabilities are less than one, just modify them accordingly
+    if not STRICT_EVALUATION:
+        modified_distribution = modified_distribution / np.sum(modified_distribution)
+
     return modified_distribution
 
 
