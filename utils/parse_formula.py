@@ -8,7 +8,6 @@ replacements for normally-omitted variables.
 
 """
 from typing import Any, Set, List
-import sympy
 from sympy.core.symbol import Symbol
 from sympy.parsing.latex import parse_latex
 
@@ -62,9 +61,6 @@ def _unique_vars_in_formula(formula: str) -> Set[str]:
             variables.extend(split_vars)
 
     # last, disregard numericals and empty strings and require unique
-    unique_variables: Set[str] = set(
-        [char for char in variables if char not in ",.0123456789"]
-    )
     unique_sympy_vars = []
 
     parse_latex_identified: List[Any] = list(parse_latex(formula).args)
@@ -89,14 +85,6 @@ def _unique_vars_in_formula(formula: str) -> Set[str]:
                 parse_latex_identified.extend(item.args)
 
     stringified = set([str(item) for item in unique_sympy_vars])
-
-    # sympy seems to respect some syntax for some reason, delete remaining {}
-    # stringified = {
-    #     item.strip("\\").replace("{", "").replace("}", "") for item in stringified
-    # }
-
-    # assert len(stringified) == len(unique_variables)
-    # assert all([var in stringified for var in unique_variables])
 
     return stringified
 

@@ -3,20 +3,25 @@ Main driver for simulation, to be used by CLI and UI
 """
 import numpy as np
 import multiprocessing as mp
-import time
+from typing import List, Union, Dict, Any
 
-from config import *
-from exceptions import *
-
-from utils.generate_distribution_curves import (
-    generate_distribution_curve,
+from config import (
+    DEFAULT_SWEEP_RANGE_X,
+    DEFAULT_SWEEP_RANGE_Y,
+    DEFAULT_SWEEP_X,
+    DEFAULT_SWEEP_Y,
+    DEFAULT_NUM_OF_FILES,
+    DEFAULT_CACHE_SIZE,
+    DEFAULT_USER_NUM,
+    DEFAULT_REQUEST_NUM,
+    DEFAULT_ALPHA,
+    DEFAULT_BETA,
 )
+from exceptions import InvalidParametersException
+
+from utils.generate_distribution_curves import generate_distribution_curve
 from core.evaluator import setup_and_simulate
-from utils.parse_formula import (
-    evaluate_string_to_valid_formula_str,
-    parse_to_sympy,
-    _unique_vars_in_formula,
-)
+from utils.parse_formula import evaluate_string_to_valid_formula_str
 
 
 class Driver(object):
@@ -54,17 +59,8 @@ class Driver(object):
         :return: x,y matrix of caching misses
         """
 
-        t1 = time.time()
-
         # evaluate the formula
         formula = evaluate_string_to_valid_formula_str(formula)
-        sympy_formula: Any = parse_to_sympy(formula)
-        variables_to_fill = [
-            var
-            for var in _unique_vars_in_formula(formula)
-            if var not in ["m", "r", "v"]
-        ]
-        var_dict = dict()
 
         # generate file distribution
         file_dist: np.ndarray = generate_distribution_curve(
@@ -92,8 +88,6 @@ class Driver(object):
                 argument_matrix[index_y][index_x][self.x_axis["name"]] = value_x
                 argument_matrix[index_y][index_x][self.y_axis["name"]] = value_y
 
-        print(f"Time to setup: {time.time() - t1}")
-
         # now use multiprocessing to bring out the big guns to simulate
         caching_dists: List[List[np.ndarray]] = []
         try:
@@ -106,7 +100,6 @@ class Driver(object):
                     caching_dists.append(
                         [result.get(timeout=10) for result in async_process]
                     )
-                    # caching_dists.append([setup_and_simulate(**arg_dict) for arg_dict in row])
         except Exception as e:
             if "division by zero" in e.args[0].lower():
                 raise InvalidParametersException(
@@ -123,6 +116,7 @@ if __name__ == "__main__":
     dr = Driver()
     print(
         dr.drive(
-            formula="{p_r(m)^{1\\over\\alpha}}\\over{\\sum_{n=1}^{m}{p_r(n)^{1\\over\\alpha}}}}"
+            formula="{p_r(m)^{1\\over\\alpha}}\\over"
+            + "{\\sum_{n=1}^{m}{p_r(n)^{1\\over\\alpha}}}}"
         )
     )

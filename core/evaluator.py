@@ -2,13 +2,8 @@
 Evaluating simulations with the power of multiprocessing
 """
 
-import sympy
 import numpy as np
-import math
-import multiprocessing
-import os
-from copy import deepcopy
-from typing import List, Dict, Union, Any
+from typing import Any
 
 from utils.generate_distribution_curves import (
     generate_distribution_curve,
@@ -30,8 +25,9 @@ def evaluate(
     **kwargs,
 ) -> np.ndarray:
     """
-    Create a simulated distribution of files cached, then choose a set of files from a distribution and return results
-    This is specifically for one user. Apply to meet requirements of overall simulation.
+    Create a simulated distribution of files cached, then choose a set of files
+    from a distribution and return results. This is specifically for one user.
+    Apply to meet requirements of overall simulation.
 
     Distribution array lengths must be the same.
 
@@ -128,7 +124,8 @@ if __name__ == "__main__":
     )
 
     argument_dict = {
-        # "formula": "{p_r(m)^{1\\over\\alpha}}\\over{\\sum_{n=1}^{m}{p_r(n)^{1\\over\\alpha}}}}",
+        # "formula": "{p_r(m)^{1\\over\\alpha}}\\over" +
+        # "{\\sum_{n=1}^{m}{p_r(n)^{1\\over\\alpha}}}}",
         "formula": "{p_r(m)^{1\\over\\alpha}}",
         "alpha": 0.9,
         "beta": 3,

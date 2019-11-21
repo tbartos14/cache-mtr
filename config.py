@@ -1,4 +1,6 @@
-from typing import Dict, Set, List, Any, Union
+# type: ignore
+
+from typing import Dict, List, Any, Union
 
 # default simulation items
 DEFAULT_NUM_OF_FILES: int = 10
@@ -46,7 +48,7 @@ DEFAULT_SWEEP_RANGE_Y: DEFAULT_SWEEP_Y["type"] = list(range(-5, 6)) if DEFAULT_S
     "can_be_negative"
 ] else list(range(1, 11))
 
-DEFAULT_FORMULA: str = "{{p_r(m)^{1\\over\\alpha}}\\over \\over{\\sum_{n=1}^{m}{p_r(n)^{1\\over\\alpha}}}}"
+DEFAULT_FORMULA: str = "{{p_r(m)^{1\\over\\alpha}}\\over" + "{\\sum_{n=1}^{m}{p_r(n)^{1\\over\\alpha}}}}"
 
 # other function variables
 USE_NUMPY_ZIPF: bool = False

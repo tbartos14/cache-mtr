@@ -2,10 +2,9 @@
 Related utilities for printing/verifying latex inputs
 """
 import requests
-import urllib.parse
 
 
-def get_latex_png(formula: str) -> None:
+def get_latex_png(formula: str) -> int:
     """
     Uses QuickLaTeX API to create IMG of written formula
     :param formula: string containing LaTeX formula
@@ -20,7 +19,8 @@ def get_latex_png(formula: str) -> None:
         "mode": "0",
         "out": "1",
         "remhost": "quicklatex.com",
-        "preamble": "\\usepackage{amsmath}\n\\usepackage{amsfonts}\n\\usepackage{amssymb}",
+        "preamble": "\\usepackage{amsmath}\n\\usepackage{amsfonts}"
+        + "\n\\usepackage{amssymb}",
         "rnd": "82.19820292929282",
     }
 
