@@ -16,6 +16,7 @@ from config import (
     DEFAULT_REQUEST_NUM,
     DEFAULT_ALPHA,
     DEFAULT_BETA,
+    POSSIBLE_SWEEPS
 )
 from exceptions import InvalidParametersException
 
@@ -26,6 +27,9 @@ from utils.parse_formula import evaluate_string_to_valid_formula_str
 
 class Driver(object):
     def __init__(self, *args, **kwargs) -> None:
+        self._reset_args()
+
+    def _reset_args(self) -> None:
         self.data: List[List[int]] = []
         self.x_axis = DEFAULT_SWEEP_X
         self.y_axis = DEFAULT_SWEEP_Y
@@ -33,7 +37,7 @@ class Driver(object):
         self.range_y = DEFAULT_SWEEP_RANGE_Y
         self.num_of_files = DEFAULT_NUM_OF_FILES
         self.cache_size = DEFAULT_CACHE_SIZE
-        self.num_of_requests = DEFAULT_REQUEST_NUM
+        self.number_of_files_requested = DEFAULT_REQUEST_NUM
         self.num_of_users = DEFAULT_USER_NUM
         self.alpha = DEFAULT_ALPHA
         self.beta = DEFAULT_BETA
@@ -45,14 +49,39 @@ class Driver(object):
 
     def _update_simulation_args(
         self,
-        x_axis: str,
-        y_axis: str,
-        range_x: List[Union[int, float]],
-        range_y: List[Union[int, float]],
+        x_axis: Dict[str, Any],
+        y_axis: Dict[str, Any],
+        range_x: Union[List[Union[int, float]], np.ndarray],
+        range_y: Union[List[Union[int, float]], np.ndarray],
     ):
-        pass
+        assert x_axis["name"].upper() in POSSIBLE_SWEEPS
+        self.x_axis = x_axis
+        self.range_x = range_x
+        assert y_axis["name"].upper() in POSSIBLE_SWEEPS
+        self.y_axis = y_axis
+        self.range_y = range_y
 
-    def drive(self, formula: str) -> List[List[np.ndarray]]:
+
+    def drive_multiple(self, formula: str) -> np.ndarray:
+        """
+        Driving multiple simulations.
+        :param formula: formula string provided
+        :param num_users: number of users (the number of the independent
+         user simulations to perform
+        :return: x,y matrix of TOTAL caching misses
+        """
+        trials: List[np.ndarray] = []
+        for i in range(self.num_of_users):
+            trials.append(self.drive(formula=formula))
+
+            bars_left_to_complete = int(20*i/self.num_of_users)
+            print(f":{bars_left_to_complete * '#'}{(20 - bars_left_to_complete) * '-'}: {(100 * i/self.num_of_users):.2f}%")
+
+        [print(str(row) + "\n") for row in trials]
+
+        return sum(trials)
+
+    def drive(self, formula: str) -> np.ndarray:
         """
         Driving simulations.
         :param: formula: formula string provided
@@ -72,10 +101,10 @@ class Driver(object):
             "formula": formula,
             "alpha": self.alpha,
             "beta": self.beta,
-            "num_files_cached": self.cache_size,
+            "cache_size": self.cache_size,
             "num_users": self.num_of_users,
             "file_request_distribution": file_dist,
-            "num_of_requests": self.num_of_requests,
+            "num_of_requests": self.number_of_files_requested,
         }
         argument_matrix: List[List[Dict[str, Any]]] = []
         for _ in self.range_y:
@@ -87,6 +116,7 @@ class Driver(object):
             for index_x, value_x in enumerate(self.range_x):
                 argument_matrix[index_y][index_x][self.x_axis["name"]] = value_x
                 argument_matrix[index_y][index_x][self.y_axis["name"]] = value_y
+
 
         # now use multiprocessing to bring out the big guns to simulate
         caching_dists: List[List[np.ndarray]] = []
@@ -109,7 +139,13 @@ class Driver(object):
         for prc in mp.active_children():
             prc.terminate()
 
-        return caching_dists
+        # for now, return the length of caching purposes
+        # if needed, exact indexes are still available for index
+
+        for index, row in enumerate(caching_dists):
+            caching_dists[index] = [len(item) for item in row]
+
+        return np.array(caching_dists)
 
 
 if __name__ == "__main__":

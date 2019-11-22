@@ -3,6 +3,7 @@ Evaluating simulations with the power of multiprocessing
 """
 
 import numpy as np
+np.seterr(divide='ignore', invalid='ignore')
 from typing import Any
 
 from utils.generate_distribution_curves import (
@@ -14,12 +15,13 @@ from utils.parse_formula import (
     parse_to_sympy,
     _unique_vars_in_formula,
 )
+from exceptions import InvalidParametersException
 
 
 def evaluate(
     file_prob_dist: np.ndarray,
     cache_choice_prob_dist: np.ndarray,
-    num_files_cached: int,
+    cache_size: int,
     num_files_requested: int,
     *args,
     **kwargs,
@@ -50,20 +52,22 @@ def evaluate(
     try:
         file_indexes_cached = np.random.choice(
             len(cache_choice_prob_dist),
-            num_files_cached,
+            cache_size,
             p=cache_choice_prob_dist,
             replace=False,
         )
     except ValueError as e:
         if "Fewer non-zero entries in p than size" in e.args[0]:
             number_of_nonzero_entries = np.count_nonzero(cache_choice_prob_dist)
-            assert number_of_nonzero_entries < num_files_cached
+            assert number_of_nonzero_entries < cache_size
             file_indexes_cached = np.random.choice(
                 len(cache_choice_prob_dist),
                 number_of_nonzero_entries,
                 p=cache_choice_prob_dist,
                 replace=False,
             )
+        else:
+            raise InvalidParametersException(e.args[0])
 
     # next, choose files requested
 
@@ -82,10 +86,21 @@ def setup_and_simulate(
     formula: str,
     file_request_distribution: np.ndarray,
     num_of_requests: int,
-    num_files_cached: int,
+    cache_size: int,
     *args,
     **kwargs,
 ) -> np.ndarray:
+    """
+    Full, single-user simulation for a given set of arguments
+    :param formula: sympy-ready formula
+    :param file_request_distribution: given file distribution array
+    :param num_of_requests: integer number of requests
+    :param num_files_cached: integer number of files cached per user
+    :param args: unused
+    :param kwargs: (supply all arguments as keyword arguments in order
+    to allow logic to utilize them for formula analysis)
+    :return: caching results
+    """
 
     # evaluate the formula
     formula = evaluate_string_to_valid_formula_str(formula)
@@ -110,7 +125,7 @@ def setup_and_simulate(
     result = evaluate(
         file_request_distribution,
         caching_dist,
-        num_files_cached,
+        cache_size,
         num_of_requests,
         **var_dict,
     )
