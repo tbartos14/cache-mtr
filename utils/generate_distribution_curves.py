@@ -3,9 +3,6 @@ Generating distribution curves for given sympy distribution formulas
 """
 
 import numpy as np
-import subprocess
-import os
-import math
 import sympy
 from typing import Any, List
 from config import DEFAULT_ZIPF, USE_NUMPY_ZIPF, STRICT_EVALUATION
@@ -21,14 +18,15 @@ def generate_distribution_curve(
     :param formula: sympa.core formula to be evaluated
 
     :param args: additional arguments, currently unused
-    :param kwargs: passing additional arguments, including sympy formulas (use of m as a sympy symbol is illegal)
-        'alpha' - kwarg specific to automatic dist
+    :param kwargs: passing additional arguments, including sympy formulas
+        (use of a, m, r, and v as a sympy symbol is illegal)
+        'a' - kwarg specific to automatic dist
         others - supply sympy symbolic expression
     :return: np.ndarray containing distribution
     """
 
     if automatic:
-        alpha = kwargs.get("alpha") if kwargs.get("alpha") else DEFAULT_ZIPF
+        alpha = kwargs.get("a") if kwargs.get("a") else DEFAULT_ZIPF
         # generate standard zipf
         if USE_NUMPY_ZIPF:
             zipf: np.ndarray = np.random.zipf(alpha, length)
@@ -43,7 +41,7 @@ def generate_distribution_curve(
                         1, np.arange(length)
                     ) ** alpha
 
-                    # need to remove infinite values, indicator of 0 index, evaluate as 1
+                    # need to remove infinite values, indicator of 0 index, use 1
                     numerator[numerator == np.inf] = 1
                     # this case won't happen for any real distribution, but who knows
                     # what i'll try later
@@ -82,25 +80,37 @@ def modify_distribution_curve(
     existing_dist: np.ndarray, formula: Any = None, *args, **kwargs
 ) -> np.ndarray:
     """
-    Modifying distribution curves, namely for creating a caching distribution for the user
+    Modifying distribution curves, namely for creating a caching distribution
+     for the user
     :param existing_dist: np.ndarray distribution container
     :param formula: sympy expression mapped for each item
     :param args: currently unused
-    :param kwargs: sympy expression variables (use of variable m is illegal)
+    :param kwargs: sympy expression variables (use of variables m, v, and r is illegal)
     :return: np.ndarray containing the final distribution
     """
     modified_distribution: List[Any] = []
-    for m in np.arange(len(existing_dist)):
-        symbolic_m = sympy.symbols("m")
-        kwargs[symbolic_m] = m
-        try:
-            modified_distribution.append(formula.evalf(subs=kwargs))
-        except Exception as e:
-            if STRICT_EVALUATION:
-                raise e
-            else:
-                modified_distribution.append(np.NaN)
-    modified_distribution: np.ndarray = np.array(modified_distribution)
+
+    assert not any(
+        [var in ["m", "v", "r"] for var in kwargs.keys()]
+    ), "Sympy Symbols 'm', 'v', and 'r' are internal use only."
+    cumulative_dist = np.cumsum(existing_dist)
+    index = np.arange(len(existing_dist))
+
+    lambda_arg_keys = ["m", "v", "r"]
+    lambda_arg_values = [index, cumulative_dist, existing_dist]
+    for key, value in kwargs.items():
+        lambda_arg_keys.append(key)
+        lambda_arg_values.append(value)
+
+    lambda_arg_keys = [sympy.Symbol(var) for var in lambda_arg_keys]
+
+    func = sympy.lambdify(lambda_arg_keys, formula, "numpy")
+    modified_distribution: np.ndarray = np.array(func(*lambda_arg_values))
+
+    # if the total probabilities are less than one, just modify them accordingly
+    if not STRICT_EVALUATION:
+        modified_distribution = modified_distribution / np.sum(modified_distribution)
+
     return modified_distribution
 
 
