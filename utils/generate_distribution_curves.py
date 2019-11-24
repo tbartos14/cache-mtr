@@ -19,14 +19,14 @@ def generate_distribution_curve(
 
     :param args: additional arguments, currently unused
     :param kwargs: passing additional arguments, including sympy formulas
-        (use of m, v, and r as a sympy symbol is illegal)
-        'alpha' - kwarg specific to automatic dist
+        (use of a, m, r, and v as a sympy symbol is illegal)
+        'a' - kwarg specific to automatic dist
         others - supply sympy symbolic expression
     :return: np.ndarray containing distribution
     """
 
     if automatic:
-        alpha = kwargs.get("alpha") if kwargs.get("alpha") else DEFAULT_ZIPF
+        alpha = kwargs.get("a") if kwargs.get("a") else DEFAULT_ZIPF
         # generate standard zipf
         if USE_NUMPY_ZIPF:
             zipf: np.ndarray = np.random.zipf(alpha, length)

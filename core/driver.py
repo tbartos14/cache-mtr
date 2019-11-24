@@ -30,7 +30,7 @@ class Driver(object):
         self._reset_args()
 
     def _reset_args(self) -> None:
-        self.data: List[List[int]] = []
+        self.file_dist: np.ndarray = np.array([])
         self.x_axis = DEFAULT_SWEEP_X
         self.y_axis = DEFAULT_SWEEP_Y
         self.range_x = DEFAULT_SWEEP_RANGE_X
@@ -54,10 +54,10 @@ class Driver(object):
         range_x: Union[List[Union[int, float]], np.ndarray],
         range_y: Union[List[Union[int, float]], np.ndarray],
     ):
-        assert x_axis["name"].upper() in POSSIBLE_SWEEPS
+        # assert x_axis["name"].upper() in POSSIBLE_SWEEPS
         self.x_axis = x_axis
         self.range_x = range_x
-        assert y_axis["name"].upper() in POSSIBLE_SWEEPS
+        # assert y_axis["name"].upper() in POSSIBLE_SWEEPS
         self.y_axis = y_axis
         self.range_y = range_y
 
@@ -70,18 +70,22 @@ class Driver(object):
          user simulations to perform
         :return: x,y matrix of TOTAL caching misses
         """
+
+        # generate file distribution
+        self.file_dist: np.ndarray = generate_distribution_curve(
+            self.num_of_files, automatic=True
+        )
+
         trials: List[np.ndarray] = []
         for i in range(self.num_of_users):
-            trials.append(self.drive(formula=formula))
+            trials.append(self.drive(formula=formula, generate_new_dist=False))
 
             bars_left_to_complete = int(20*i/self.num_of_users)
             print(f":{bars_left_to_complete * '#'}{(20 - bars_left_to_complete) * '-'}: {(100 * i/self.num_of_users):.2f}%")
 
-        [print(str(row) + "\n") for row in trials]
-
         return sum(trials)
 
-    def drive(self, formula: str) -> np.ndarray:
+    def drive(self, formula: str, generate_new_dist: bool = False) -> np.ndarray:
         """
         Driving simulations.
         :param: formula: formula string provided
@@ -91,10 +95,11 @@ class Driver(object):
         # evaluate the formula
         formula = evaluate_string_to_valid_formula_str(formula)
 
-        # generate file distribution
-        file_dist: np.ndarray = generate_distribution_curve(
-            self.num_of_files, automatic=True
-        )
+        if generate_new_dist:
+            # generate file distribution
+            self.file_dist: np.ndarray = generate_distribution_curve(
+                self.num_of_files, automatic=True,
+            )
 
         # pre-populate a matrix of arguments
         default_arguments: Dict[str, Any] = {
@@ -103,8 +108,9 @@ class Driver(object):
             "beta": self.beta,
             "cache_size": self.cache_size,
             "num_users": self.num_of_users,
-            "file_request_distribution": file_dist,
+            # "file_request_distribution": self.file_dist,
             "num_of_requests": self.number_of_files_requested,
+            "num_of_files": self.num_of_files,
         }
         argument_matrix: List[List[Dict[str, Any]]] = []
         for _ in self.range_y:

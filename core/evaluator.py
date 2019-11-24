@@ -66,6 +66,16 @@ def evaluate(
                 p=cache_choice_prob_dist,
                 replace=False,
             )
+        elif "contain NaN" in e.args[0]:
+            remove_nan = np.nan_to_num(cache_choice_prob_dist)
+            number_of_nonzero_entries = np.count_nonzero(remove_nan)
+            file_indexes_cached = np.random.choice(
+                len(cache_choice_prob_dist),
+                min(number_of_nonzero_entries, cache_size),
+                p=remove_nan,
+                replace=False,
+            )
+            print(file_indexes_cached)
         else:
             raise InvalidParametersException(e.args[0])
 
@@ -84,7 +94,8 @@ def evaluate(
 
 def setup_and_simulate(
     formula: str,
-    file_request_distribution: np.ndarray,
+    # file_request_distribution: np.ndarray,
+    num_of_files: int,
     num_of_requests: int,
     cache_size: int,
     *args,
@@ -116,6 +127,10 @@ def setup_and_simulate(
 
             ipdb.set_trace()
         var_dict[var] = kwargs[var]
+
+    file_request_distribution: np.ndarray = generate_distribution_curve(
+                num_of_files, automatic=True, **kwargs
+            )
 
     caching_dist = modify_distribution_curve(
         file_request_distribution, sympy_formula, **var_dict
